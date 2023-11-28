@@ -15,7 +15,7 @@ send a command to the NX-8E panel.
 * VCC and GND on Translators connect to 5V and GND pins on Arduino.
 * The GE NX-8E needs to connect (via a translator) to Serial3 (pins 14-15)
 * Connect the RS232 of the other device (e.g. Crestron, also via a translator) to Serial2 (pins 16-17)
-* Edit the sketch to match your baud rate (note reference to 9600 baud near top of .ino file)
+* Edit the sketch to match your baud rate (note reference to 9600 baud near top of .ino file).  Changing this, of course, requires reflashing your board.
 
 Generally speaking, I expect you shouldn't need to change anything about the way your application is set up.
 The sketch will pass valid traffic through, and automatically detect when timing mitigations need to occur, and
