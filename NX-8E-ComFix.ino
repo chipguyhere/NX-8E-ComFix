@@ -28,11 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Client (Crestron) needs to be on Serial2.
 // Serial1 reserved for future expansion.
 // Serial (USB) available for debugging.
-//
-// Ideally: grants access to the GE to two separate serial devices.
-// Ideally: initiates polling for detailed status on all zones if a downstream device isn't doing it.
-//
 
+#define NX8E_BAUDRATE  9600
 
 
 
@@ -106,8 +103,8 @@ void setup() {
   PCMSK1 |= (1 << PCINT9);         // Enable PCINT9 which corresponds to Arduino pin 15  
 #endif
   Serial.begin(115200);
-  Serial3.begin(19200);
-  Serial2.begin(19200);
+  Serial3.begin(NX8E_BAUDRATE);
+  Serial2.begin(NX8E_BAUDRATE);
   initialGEserialsize=Serial3.availableForWrite();
   Serial.print("buf size ");
   Serial.println(initialGEserialsize);
@@ -247,12 +244,7 @@ void loop() {
             Serial3.write((byte)0x7d);
             Serial3.write(b^0x20);
           } else {
-            //if (buftoGEidx==1 && b==0x7e) {
-            //      byte bb[] = {0x7e, 0x01, 0x1D, 0x1E, 0x1F, 0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e};
-            //      Serial3.write(bb, sizeof(bb));
-            //} else {
             Serial3.write(b);
-            //}
           }
           // Pace our sending.  Outgoing requests are very short (like 6 bytes).
           // The slower we send outgoing requests, the more we
@@ -260,7 +252,7 @@ void loop() {
           // we can abort the outgoing tx before tx is complete
           // (ideal, since we'll positively know it didn't complete)
           // A smaller +number here will increase polling throughput on the port, and also the collision risk.        
-          allowTx1aftermillis = m+5;  
+          allowTx1aftermillis = m+15;  
           
           // Did we just send the last byte we wanted to send?  If so, end efforts to transmit.
           if (buftoGEidx==buftoGElen) {
