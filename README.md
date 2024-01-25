@@ -21,3 +21,38 @@ Generally speaking, I expect you shouldn't need to change anything about the way
 The sketch will pass valid traffic through, and automatically detect when timing mitigations need to occur, and
 transparently does them.  The sketch will automatically acknowledge messages that the panel wants acknowledged,
 and will also silently discard any (unneeded) acknowledge messages that are sent by your application.
+
+# About the issue this resolves
+
+The NX-8E panel is programmed in such a way that when it decides to send a notification to your application,
+it expects that the very next packet it will receive is an acknowledgment to that notification.  The panel
+does not behave well if the next packet it receives is something different.  In my experimentation, the
+panel will discard that packet, and then replay the notification within a second or two later, and
+will frequently be numb to further commands (including repeats of the one it ignored) in the meantime.  Even if the
+notification packet it wanted comes immediately after the command that wasn't what it wanted, the
+panel is frequently pissed and isn't accepting of this, ignoring it until the notification is repeated later.
+
+This presents a problem if a command packet was in transit when a notifiable event happens.
+The panel doesn't properly consider this possibility.
+Your command gets swallowed and then the panel is frequently unworkable while it pauses and waits for that
+acknowledgment.  Your home automation system then has to figure out that the original command got ignored.
+
+Enter my Arduino sketch.  It takes advantage of the fact that the NX-8E command protocol lets you abandon a
+packet mid-transit just by starting a new one (which it recognizes due to the header).  The panel does not
+get pissed if you abandon your packet in transit, then give it the notification it wants, and then begin your
+command packet again.
+
+A dedicated Arduino microcontroller has the timing precision to make this "abandon" decision at the last possible
+microsecond in a way that your home automation controller, which runs a full-size multi-tasking OS, can't consistently
+match.  Correction -- it probably could, if it had a "kernel driver" for the NX-8E interface.  But that's
+not how it works on multi-tasking OS's on home automation controllers, where kernel drivers are limited to native
+PC or USB or similar hardware that are directly part of the machine itself.
+
+Since your home automation system is unlikely to offer kernel drivers for home security panels, everything that
+pauses or slows down the home automation application introduces timing irregularities (sometimes very large
+ones) that make it practically impossible to mitigate this issue -- hence clunky solutions that involve
+using only polling, as a way to sidestep it.
+
+Simply plug this Arduino Mega in between the home automation system and the NX-8E panel.  It will detect
+the impending collision before it happens, and then silently abandon the outgoing request, queuing it in memory until the
+required acknowledgment's out of the way.  Whew!  Other than a minimal delay, your app won't know anything happened.
